@@ -1,0 +1,176 @@
+- name: "Create {{ user }} user"
+  ansible.builtin.user:
+    name: "{{ user }}"
+    comment: "{{ user }}"
+    uid: "{{ uid }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    groups: "podman"
+    append: yes
+
+- name: "Change {{ user }}'s home directory permissions"
+  file:
+    path: "/home/{{ user }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0770'
+    state: directory
+
+- name: 'Copy backups'
+  ansible.posix.synchronize:
+    src: "{{ backup_path }}"
+    dest: "{{ path }}"
+    recursive: true
+  when: restore is truthy
+  ignore_errors: true
+
+- name: 'Change permissions of restored directories'
+  command: 'find {{ path }} -type d -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: 'Change permissions of restored files'
+  command: 'find {{ path }} -type f -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Create {{ user }} tmp directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ user }}"
+    owner: "{{ user }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ path }}"
+    state: directory
+    group: "{{ user }}"
+    owner: "{{ user }}"
+    recurse: yes
+    mode: '0770'
+
+- name: "Create {{ user }} directory for samba usage" 
+  file:
+    path: "{{ smb_path }}"
+    state: directory
+    group: smb_admins
+    owner: "{{ user }}"
+    mode: '0770'
+    recurse: yes
+
+- name: 'Create samba configuration files for volumes'
+  copy:
+    dest: "{{ SMB_Config_PATH }}/{{ user }}.conf"
+    force: true
+    group: "{{ user }}"
+    owner: "{{ user }}"
+    mode: '0644'
+    content:
+      "[{{ user }}]\n
+         comment = {{ user }} share\n
+         path = {{ smb_path }}\n
+         valid users = @smb_admins\n
+         writable = yes\n"
+
+- name: "Add {{ user }} configuration file to smb.conf "
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    line: "include = {{ SMB_Config_PATH }}/{{ user }}.conf"
+
+- name: 'Clone a custom version of the repo'
+  ansible.builtin.git:
+    repo: https://github.com/sdesous/transfer.sh.git
+    dest: /tmp/transfer.sh
+
+- name: "Add {{ user }} to subuid and subgid"
+  import_tasks: subuid_or_subgid.yaml
+  vars:
+    username: "{{ user }}"
+
+- name: 'Run podman system migrate'
+  command: "podman system migrate"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Create {{ user }}'s pod"
+  containers.podman.podman_pod:
+    name: "{{ user }}_pod"
+    state: started
+    ports: "{{ ports }}"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Run {{ user }}'s container"
+  containers.podman.podman_container:
+    pod: "{{ user }}_pod"
+    image: "{{ link }}"
+    name: "{{ user }}"
+    state: started
+    detach: yes
+    restart: true
+    volume: "{{ volumes }}"
+    env: "{{ env }}"
+    command: "--provider local --basedir /tmp/"
+    restart_policy: always
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Create {{ user }} yaml file"
+  ansible.builtin.shell : "podman generate kube {{ user }}_pod > {{ path }}/{{ user }}_kubefile.yaml" 
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: 'Rename the pod correctly in the yaml file'
+  ansible.builtin.replace:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    regexp: '{{ user }}pod'
+    replace: "{{ user }}_pod"
+
+- name: "Change {{ user }}'s yaml file permissions"
+  file:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    owner: root
+    group: "{{ user }}"
+    mode: '0664'
+    state: file
+
+- name: 'Create pod file for init.d'
+  ansible.builtin.copy:
+    dest: "/root/pods/{{ user }}_service"
+    src: "{{ playbook_dir }}/resources/pod_template"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: "Update {{ user }}_service file"
+  ansible.builtin.replace:
+    path: "/root/pods/{{ user }}_service"
+    regexp: "{{ item.0 }}"
+    replace: "{{ item.1 }}"
+  with_together:
+    - ['\$user','\$volume_path','\$pod_name']
+    - ["{{ user }}","{{ path }}","{{ user }}_pod"]
+
+- name: "Create {{ user }} symlink"
+  file:
+    src: "/root/pods/{{ user }}_service"
+    dest: "/etc/init.d/{{ user }}"
+    state: link
+
+- name: "Add {{ user }} to init boot"
+  command: "{{ item }}"
+  with_items:
+    - "rc-update add {{ user }} boot"

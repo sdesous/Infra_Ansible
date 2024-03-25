@@ -1,0 +1,250 @@
+- name: "Create {{ user }} user"
+  ansible.builtin.user:
+    name: "{{ user }}"
+    comment: "{{ user }}"
+    uid: "{{ uid }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    groups: "podman"
+    append: yes
+
+- name: "Change {{ user }}'s home directory permissions"
+  file:
+    path: "/home/{{ user }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0770'
+    state: directory
+
+- name: "Copy backups"
+  ansible.posix.synchronize:
+    src: "{{ backup_path }}"
+    dest: "{{ path }}"
+    recursive: true
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored directories"
+  command: 'find {{ path }} -type d -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored files"
+  command: 'find {{ path }} -type f -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ user }}"
+    owner: "{{ user }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Add user to subuid and subgid"
+  import_tasks: subuid_or_subgid.yaml
+  vars:
+    username: "{{ user }}"
+
+- name: "Run podman system migrate"
+  command: "podman system migrate"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Create {{ user }}'s pod"
+  containers.podman.podman_pod:
+    name: "{{ user }}_pod"
+    state: started
+    ports: "{{ ports }}"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Run {{ user }} container"
+  containers.podman.podman_container:
+    pod: "{{ user }}_pod"
+    image: "{{ link }}"
+    name: "{{ user }}"
+    state: started
+    detach: yes
+    restart: true
+    recreate: true
+    volume: "{{ volumes }}"
+    env: "{{ env }}"
+    restart_policy: always
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: Include other roles
+  ansible.builtin.include_role:
+    name: "{{ item }}"
+  with_items:
+    - role: 'services/jellyfin'
+      tags: 'jellyfin'
+      vars:
+        user: "{{ Jellyfin_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Jellyfin_UID }}"
+        path: "{{ Jellyfin_PATH }}"
+        backup_path: "{{ Jellyfin_Backup_PATH }}"
+        media_path: "{{ Jellyfin_Media_PATH }}"
+        volumes: "{{ Jellyfin_VOLUMES }}"
+        env: "{{ Jellyfin_ENV }}"
+        link: "{{ Jellyfin_Link }}"
+
+    - role: 'services/flaresolverr'
+      tags: 'flaresolverr'
+      vars:
+        user: "{{ FLaresolverr_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ FLaresolverr_UID }}"
+        path: "{{ FLaresolverr_PATH }}"
+        backup_path: "{{ FLaresolverr_Backup_PATH }}"
+        env: "{{ FLaresolverr_ENV }}" 
+        link: "{{ FLaresolverr_Link }}"     
+
+    - role: 'services/jackett'
+      tags: 'jackett'
+      vars:
+        user: "{{ Jackett_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Jackett_UID }}"
+        path: "{{ Jackett_PATH }}"
+        backup_path: "{{ Jackett_Backup_PATH }}"
+        volumes: "{{ Jackett_VOLUMES }}"
+        env: "{{ Jackett_ENV }}"
+        link: "{{ Jackett_Link }}"
+
+    - role: 'services/transmission'
+      tags: 'transmission'
+      vars:
+        user: "{{ Transmission_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Transmission_UID }}"
+        path: "{{ Transmission_PATH }}"
+        backup_path: "{{ Transmission_Backup_PATH }}"
+        volumes: "{{ Transmission_VOLUMES }}"
+        env: "{{ Transmission_ENV }}"
+        link: "{{ Transmission_Link }}"
+
+    - role: 'services/sonarr'
+      tags: 'sonarr'
+      vars:
+        user: "{{ Sonarr_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Sonarr_UID }}"
+        path: "{{ Sonarr_PATH }}"
+        backup_path: "{{ Sonarr_Backup_PATH }}"
+        volumes: "{{ Sonarr_VOLUMES }}"
+        env: "{{ Sonarr_ENV }}"
+        link: "{{ Sonarr_Link }}"
+
+    - role: 'services/radarr'
+      tags: 'radarr'
+      vars:
+        user: "{{ Radarr_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Radarr_UID }}"
+        path: "{{ Radarr_PATH }}"
+        backup_path: "{{ Radarr_Backup_PATH }}"
+        volumes: "{{ Radarr_VOLUMES }}"
+        env: "{{ Radarr_ENV }}"
+        link: "{{ Radarr_Link }}"
+
+    - role: 'services/lidarr'
+      tags: 'lidarr'
+      vars:
+        user: "{{ Lidarr_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Lidarr_UID }}"
+        path: "{{ Lidarr_PATH }}"
+        backup_path: "{{ Lidarr_Backup_PATH }}"
+        volumes: "{{ Lidarr_VOLUMES }}"
+        env: "{{ Lidarr_ENV }}"
+        link: "{{ Lidarr_Link }}"
+
+    - role: 'services/homarr'
+      tags: 'homarr'
+      vars:
+        user: "{{ Homarr_Username }}"
+        admin: "{{ Ombi_Username }}"
+        uid: "{{ Homarr_UID }}"
+        path: "{{ Homarr_PATH }}"
+        backup_path: "{{ Homarr_Backup_PATH }}"
+        volumes: "{{ Homarr_VOLUMES }}"
+        env: "{{ Homarr_ENV }}"
+        link: "{{ Homarr_Link }}"
+
+- name: "Change Media directories permissions"
+  command: "podman unshare chown -R {{ uid }} {{ Media_PATH }} {{ Download_PATH }}"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Add the users to {{ user }} group"
+  ansible.builtin.user:
+    name: "{{ item.key | lower }}"
+    groups: "smb_admins"
+    append: yes
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: "Create {{ user }} yaml file"
+  ansible.builtin.shell : "podman generate kube {{ user }}_pod > {{ path }}/{{ user }}_kubefile.yaml" 
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Rename the pod correctly in the yaml file"
+  ansible.builtin.replace:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    regexp: '{{ user }}pod'
+    replace: "{{ user }}_pod"
+
+- name: "Change {{ user }}'s yaml file permissions"
+  file:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    owner: root
+    group: "{{ user }}"
+    mode: '0664'
+    state: file
+
+- name: "Create pod file for init.d"
+  ansible.builtin.copy:
+    dest: "/root/pods/{{ user }}_service"
+    src: "{{ playbook_dir }}/resources/pod_template"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: "Update {{ user }}_service file"
+  ansible.builtin.replace:
+    path: "/root/pods/{{ user }}_service"
+    regexp: "{{ item.0 }}"
+    replace: "{{ item.1 }}"
+  with_together:
+    - ['\$user','\$volume_path','\$pod_name']
+    - ["{{ user }}","{{ path }}","{{ user }}_pod"]
+
+- name: "Create {{ user }} symlink"
+  file:
+    src: "/root/pods/{{ user }}_service"
+    dest: "/etc/init.d/{{ user }}"
+    state: link
+
+- name: "Add {{ user }} to init boot"
+  command: "{{ item }}"
+  with_items:
+    - "rc-update add {{ user }} boot"

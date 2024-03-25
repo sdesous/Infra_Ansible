@@ -1,0 +1,184 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.8.3
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2024-03-06T12:13:18Z"
+  labels:
+    app: ombipod
+  name: ombipod
+spec:
+  containers:
+  - args:
+    - /usr/local/bin/python
+    - -u
+    - /app/flaresolverr.py
+    env:
+    - name: PGID
+      value: "1002"
+    - name: PUID
+      value: "1002"
+    - name: LOG_LEVEL
+      value: info
+    image: docker.io/flaresolverr/flaresolverr:latest
+    name: flaresolverr
+    ports:
+    - containerPort: 3579
+      hostPort: 3579
+    - containerPort: 7878
+      hostPort: 7878
+    - containerPort: 8191
+      hostPort: 8191
+    - containerPort: 8686
+      hostPort: 8686
+    - containerPort: 8989
+      hostPort: 8989
+    - containerPort: 9091
+      hostPort: 9091
+    - containerPort: 9117
+      hostPort: 9117
+    - containerPort: 9898
+      hostPort: 9898
+    - containerPort: 51413
+      hostPort: 51413
+    - containerPort: 51413
+      hostPort: 51413
+      protocol: UDP
+    securityContext: {}
+  - env:
+    - name: PUID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    - name: PGID
+      value: "1002"
+    - name: AUTO_UPDATE
+      value: "true"
+    image: lscr.io/linuxserver/jackett:latest
+    name: jackett
+    volumeMounts:
+    - mountPath: /config
+      name: volumes-jackett_volume-config-host-0
+    - mountPath: /downloads
+      name: volumes-jackett_volume-downloads-host-1
+  - env:
+    - name: PUID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    image: lscr.io/linuxserver/transmission:latest
+    name: transmission
+    volumeMounts:
+    - mountPath: /config
+      name: volumes-transmission_volume-config-host-0
+    - mountPath: /downloads
+      name: tmp-host-1
+    - mountPath: /watch
+      name: volumes-transmission_volume-watch-host-2
+  - env:
+    - name: PUID
+      value: "1002"
+    - name: PGID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    image: lscr.io/linuxserver/sonarr:latest
+    name: sonarr
+    volumeMounts:
+    - mountPath: /downloads
+      name: tmp-host-0
+    - mountPath: /config
+      name: volumes-sonarr_volume-config-host-1
+    - mountPath: /Series
+      name: tmp-host-2
+  - env:
+    - name: PUID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    - name: PGID
+      value: "1002"
+    image: lscr.io/linuxserver/radarr:latest
+    name: radarr
+    volumeMounts:
+    - mountPath: /config
+      name: volumes-radarr_volume-config-host-0
+    - mountPath: /downloads
+      name: tmp-host-1
+    - mountPath: /Films
+      name: tmp-host-2
+  - env:
+    - name: PGID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    - name: PUID
+      value: "1002"
+    image: lscr.io/linuxserver/lidarr:latest
+    name: lidarr
+    volumeMounts:
+    - mountPath: /config
+      name: volumes-lidarr_volume-config-host-0
+    - mountPath: /music
+      name: tmp-host-1
+    - mountPath: /downloads
+      name: tmp-host-2
+  - env:
+    - name: PUID
+      value: "1002"
+    - name: TZ
+      value: Etc/UTC
+    - name: PGID
+      value: "1002"
+    image: lscr.io/linuxserver/ombi:latest
+    name: ombi
+    volumeMounts:
+    - mountPath: /config
+      name: volumes-ombi_volume-config-host-0
+  volumes:
+  - hostPath:
+      path: /volumes/lidarr_volume/config
+      type: Directory
+    name: volumes-lidarr_volume-config-host-0
+  - hostPath:
+      path: /tmp
+      type: Directory
+    name: tmp-host-1
+  - hostPath:
+      path: /tmp
+      type: Directory
+    name: tmp-host-2
+  - hostPath:
+      path: /volumes/transmission_volume/config
+      type: Directory
+    name: volumes-transmission_volume-config-host-0
+  - hostPath:
+      path: /volumes/transmission_volume/watch
+      type: Directory
+    name: volumes-transmission_volume-watch-host-2
+  - hostPath:
+      path: /tmp
+      type: Directory
+    name: tmp-host-0
+  - hostPath:
+      path: /volumes/sonarr_volume/config
+      type: Directory
+    name: volumes-sonarr_volume-config-host-1
+  - hostPath:
+      path: /volumes/radarr_volume/config
+      type: Directory
+    name: volumes-radarr_volume-config-host-0
+  - hostPath:
+      path: /volumes/ombi_volume/config
+      type: Directory
+    name: volumes-ombi_volume-config-host-0
+  - hostPath:
+      path: /volumes/jackett_volume/config
+      type: Directory
+    name: volumes-jackett_volume-config-host-0
+  - hostPath:
+      path: /volumes/jackett_volume/downloads
+      type: Directory
+    name: volumes-jackett_volume-downloads-host-1

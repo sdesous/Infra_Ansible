@@ -1,0 +1,100 @@
+- hosts: "{{ IP_ADDR }}"
+  remote_user: root
+  vars_files:
+    - vars/vars.yaml
+    - vars/secrets.yaml
+  roles:
+    - { role: 'update', tags: 'update'}                         # Don't move this line (first)  
+    - { role: 'samba', tags: 'samba'}                           # Don't move this line (second)
+
+    - role: 'services/transfer.sh'
+      tags: 'transfer.sh'                     
+      vars:
+        user: "{{ Transfer_Username }}"
+        ports: "{{ Transfer_PORTS }}"
+        uid: "{{ Transfer_UID }}"
+        path: "{{ Transfer_PATH }}"
+        backup_path: "{{ Transfer_Backup_PATH }}"
+        volumes: "{{ Transfer_VOLUMES }}"
+        env: "{{ Transfer_ENV }}"
+        smb_path: "{{ Transfer_TMP_PATH }}"
+        link: "{{ Transfer_Link }}"
+
+    - role: 'services/haproxy'
+      tags: 'haproxy'                     
+      vars:
+        user: "{{ HAproxy_Username }}"
+        ports: "{{ HAproxy_PORTS }}"
+        uid: "{{ HAproxy_UID }}"
+        path: "{{ HAproxy_PATH }}"
+        backup_path: "{{ HAproxy_Backup_PATH }}"
+        volumes: "{{ HAproxy_VOLUMES }}"
+        certificate_path: "{{ HA_certificates_PATH }}"
+        certificate_backup_path: "{{ HA_certificates_Backup_PATH }}"
+        link: "{{ HAproxy_Link }}"
+
+    - role: 'services/wireguard'
+      tags: 'wireguard'                     
+      vars:
+        user: "{{ Wireguard_Username }}"
+        ports: "{{ Wireguard_PORTS }}"
+        uid: "{{ Wireguard_UID }}"
+        path: "{{ Wireguard_PATH }}"
+        backup_path: "{{ Wireguard_Backup_PATH }}"
+        volumes: "{{ Wireguard_VOLUMES }}"
+        env: "{{ Wireguard_ENV }}"
+        link: "{{ Wireguard_Link }}"
+
+    - role: 'services/vaultwarden'
+      tags: 'vaultwarden'                     
+      vars:
+        user: "{{ Vaultwarden_Username }}"
+        ports: "{{ Vaultwarden_PORTS }}"
+        uid: "{{ Vaultwarden_UID }}"
+        path: "{{ Vaultwarden_PATH }}"
+        backup_path: "{{ Vaultwarden_Backup_PATH }}"
+        volumes: "{{ Vaultwarden_VOLUMES }}"
+        env: "{{ Vaultwarden_ENV }}"
+        link: "{{ Vaultwarden_Link }}"
+
+    - role: 'services/ombi'
+      tags: 'ombi'                     
+      vars:
+        user: "{{ Ombi_Username }}"
+        ports: "{{ Ombi_PORTS + FLaresolverr_PORTS + Jackett_PORTS + Radarr_PORTS + Sonarr_PORTS + Lidarr_PORTS + Transmission_PORTS + Homarr_PORTS + Jellyfin_PORTS }}"
+        uid: "{{ Ombi_UID }}"
+        path: "{{ Ombi_PATH }}"
+        backup_path: "{{ Ombi_Backup_PATH }}"
+        volumes: "{{ Ombi_VOLUMES }}"
+        env: "{{ Ombi_ENV }}"
+        link: "{{ Ombi_Link }}"
+
+    - role: 'services/nextcloud'
+      tags: 'nextcloud'                     
+      vars:
+        user: "{{ Nextcloud_Username }}"
+        ports: "{{ Nextcloud_PORTS }}"
+        uid: "{{ Nextcloud_UID }}"
+        path: "{{ Nextcloud_PATH }}"
+        backup_path: "{{ Nextcloud_Backup_PATH }}"
+        media_path: "{{ Nextcloud_Media_PATH }}"
+        volumes: "{{ Nextcloud_VOLUMES }}"
+        env: "{{ Nextcloud_ENV }}"
+        env_postgres: "{{ Nextcloud_Postgres_ENV }}"
+        volume_postgres: "{{ Nextcloud_Postgres_VOLUMES }}"
+        volume_redis: "{{ Nextcloud_Redis_VOLUMES }}"
+        link: "{{ Nextcloud_Link }}"
+
+    - role: 'services/mealie'
+      tags: 'mealie'                     
+      vars:
+        user: "{{ Mealie_Username }}"
+        ports: "{{ Mealie_PORTS }}"
+        uid: "{{ Mealie_UID }}"
+        path: "{{ Mealie_PATH }}"
+        backup_path: "{{ Mealie_Backup_PATH }}"
+        volumes: "{{ Mealie_VOLUMES }}"
+        env: "{{ Mealie_ENV }}"
+        volume_postgres: "{{ Mealie_Postgres_VOLUMES }}"
+        env_postgres: "{{ Mealie_Postgres_ENV }}"
+        link: "{{ Mealie_Link }}"

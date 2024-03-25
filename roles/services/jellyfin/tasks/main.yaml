@@ -1,0 +1,73 @@
+- name: "Copy backups"
+  ansible.posix.synchronize:
+    src: "{{ backup_path }}"
+    dest: "{{ path }}"
+    recursive: true
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored directories"
+  command: 'find {{ path }} -type d -exec chown {{ admin }}:{{ admin }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored files"
+  command: 'find {{ path }} -type f -exec chown {{ admin }}:{{ admin }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ admin }}"
+    owner: "{{ admin }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Create {{ user }} media directory"
+  file:
+    path: "{{ media_path }}"
+    state: directory
+    owner: "{{ admin }}"
+    group: "{{ admin }}"
+    mode: '0770'
+    recurse: true
+
+- name: "Create samba configuration files for volumes"
+  copy:
+    dest: "{{ SMB_Config_PATH }}/jellyfin.conf"
+    force: true
+    group: "{{ admin }}"
+    owner: "{{ admin }}"
+    mode: '0644'
+    content:
+      "[{{ user }}]\n
+         comment = {{ user }}'s media share\n
+         path = {{ media_path }}\n
+         valid users = @smb_users\n
+         writable = yes\n"
+
+- name: "Add {{ user }} configuration file to smb.conf "
+  ansible.builtin.lineinfile:
+    path: /etc/samba/smb.conf
+    line: "include = {{ SMB_Config_PATH }}/{{ user }}.conf"
+
+- name: "Run {{ user }}'s container"
+  containers.podman.podman_container:
+    pod: "{{ admin }}_pod"
+    image: "{{ link }}"
+    name: "{{ user }}"
+    state: started
+    restart: true
+    detach: yes
+    volume: "{{ volumes }}"
+    env: "{{ env }}"
+    restart_policy: always
+  become: true
+  become_user: "{{ admin }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+  

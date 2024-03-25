@@ -1,0 +1,42 @@
+#!/bin/ash
+
+Usage () {
+echo -e "\033[0;33mUsage: subpodman username command\033[0m"
+}
+
+count="$#"
+username="$1"
+
+if ! id "$username" >/dev/null 2>&1; then
+    Usage
+    exit 1
+fi
+
+shift
+
+command="$@"
+
+if ! [[ "$#" -eq 0 ]]
+then 
+
+
+    if [[ "$count" -lt 2 ]]
+    then
+        Usage
+        exit 1
+    fi
+
+    if ! [[ "$username" =~ ^[a-z]+$ ]]
+    then
+        echo "Bad username value given"
+        exit 1
+    fi
+
+    if ! [[ "$command" =~ ^[a-zA-Z0-9_\ \-]*$ ]]
+    then
+        echo "Bad command given"
+        exit 1
+    fi
+fi
+
+su - "$username" -s /bin/ash -c 'podman '"$command"

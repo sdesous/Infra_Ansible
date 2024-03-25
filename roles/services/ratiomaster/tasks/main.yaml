@@ -1,0 +1,47 @@
+- name: 'Clone a custom version of the repo'
+  ansible.builtin.git:
+    repo: https://github.com/sdesous/Ratiomaster.git
+    dest: /tmp/ratiomaster
+
+- name: "Build a custom image of {{ user }}"
+  containers.podman.podman_image:
+    name: ratiomaster
+    path: /tmp/ratiomaster
+    force: true
+    build:
+      format: docker
+      extra_args: "--build-arg RUNAS=doesntmatter"
+  become: true
+  become_user: "{{ admin }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: 'Remove git clone directory'
+  ansible.builtin.file:
+    path: /tmp/ratiomaster
+    state: absent
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ admin }}"
+    owner: "{{ admin }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Run {{ user }}'s container"
+  containers.podman.podman_container:
+    pod: "{{ admin }}_pod"
+    image: "{{ link }}"
+    name: "{{ user }}"
+    state: started
+    restart: true
+    detach: yes
+    volume: "{{ volumes }}"
+    restart_policy: always
+  become: true
+  become_user: "{{ admin }}"
+  become_method: su
+  become_flags: '-s /bin/ash'

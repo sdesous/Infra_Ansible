@@ -1,0 +1,9 @@
+#!/sbin/openrc-run
+
+name=$RC_SVCNAME
+pod_name=$pod_name
+command_user="$user"
+command="/usr/bin/podman"
+command_args="play kube --replace $volume_path/$user_kubefile.yaml > /dev/null"
+
+source "/root/pods/init.d/pod"

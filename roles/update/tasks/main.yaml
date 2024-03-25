@@ -1,0 +1,161 @@
+---
+- name: Disable SSH password auth
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^#PasswordAuthentication yes"
+    line: "PasswordAuthentication no"
+
+- name: Restart SSH deamon
+  service:
+    name: sshd
+    state: restarted
+
+## Update and Upgrade
+- name: Enable community repos
+  ansible.builtin.replace:
+      path: /etc/apk/repositories
+      regexp: '^#http'
+      replace: 'http'
+
+- name: Update software
+  command: apk update
+
+- name: Upgrade software
+  command: apk upgrade --update-cache --available
+
+- name: Install Podman
+  command: apk add podman
+
+- name: Install git
+  command: apk add git
+
+- name: Install rsync
+  command: apk add rsync
+
+- name: Install certbot
+  command: apk add certbot
+
+## Run services on boot
+- name: Update to activate cgroups (mandatory to use podman)
+  command: "{{ item }}"
+  with_items:
+    - "rc-update add cgroups"  
+    - "rc-update add cgroups boot"  
+    - "rc-service cgroups start"
+    - "rc-update add netmount boot"
+    - "rc-update add podman boot"
+
+- name: Create cgroup directory
+  file:
+    path: /sys/fs/cgroup/cpu
+    state: directory
+
+## DNS
+- name: Create UDHCPC directory
+  file:
+    path: "/etc/udhcpc/"
+    state: directory
+
+- name: Create DNS settings file
+  ansible.builtin.lineinfile:
+    path: "/etc/udhcpc/udhcpc.conf"
+    line: "RESOLV_CONF=no"
+    mode: "0600"
+    create: yes
+
+- name: Delete default DNS address
+  ansible.builtin.replace:
+      path: /etc/resolv.conf
+      regexp: '^nameserver.*'
+      replace: ''  
+
+- name: Replace DNS address
+  ansible.builtin.blockinfile:
+    path: /etc/resolv.conf
+    block: |
+      nameserver {{ item }}
+    marker: ""
+  loop : "{{ DNS }}"
+
+- name: Reboot the machine
+  ansible.builtin.reboot:
+
+## Podman
+- name: Ensure group "podman" exists with correct gid
+  ansible.builtin.group:
+    name: podman
+    state: present
+    gid: 2000
+
+- name: Create podman socket directory
+  file:
+    path: "/var/run/podman/"
+    state: directory
+    owner: root
+    group: podman
+    mode: '0770'
+
+- name: Create podman socket
+  file:
+    path: "/var/run/podman/podman.sock"
+    state: touch
+    owner: root
+    group: podman
+    mode: '0660'
+
+- name: Create rootless init directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0770'
+  with_items: ["/root/pods", "/root/pods/init.d"]
+
+- name: Create pod file for init.d
+  ansible.builtin.copy:
+    dest: "/root/pods/init.d/pod"
+    src: "{{ playbook_dir }}/resources/pod_init"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: Create volume directory
+  file:
+    path: "{{ Volumes_PATH }}"
+    owner: root
+    group: podman
+    mode: '0770'
+    state: directory
+
+- name: Copy subpodman script
+  ansible.builtin.copy:
+    dest: "/bin/subpodman"
+    src: "{{ playbook_dir }}/resources/subpodman"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: Run modprobe command
+  command: "modprobe tun"
+
+- name: Make modprobe persistent
+  ansible.builtin.lineinfile:
+    path: "/etc/modules"
+    line: "tun"
+
+- name: Enable usage of port from 80 with rootless users 
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: "net.ipv4.ip_unprivileged_port_start=80"
+
+- name: Run sysctl to use ports from 80 with rootless users
+  command: sysctl net.ipv4.ip_unprivileged_port_start=80
+
+# - name: Let's encrypt certificate renew cron job
+#   ansible.builtin.cron:
+#     name: "Let's encrypt cron job"
+#     minute: "0"
+#     hour: "0"
+#     day: "1"
+#     job: "./volumes/certificates/letsencrypt_renew.sh"

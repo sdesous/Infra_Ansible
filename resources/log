@@ -1,0 +1,60 @@
+#!/bin/ash
+
+Usage () {
+echo "Usage: log username [OPTIONS]
+
+Options:
+        -h             Print this message
+        -t int         Output the specified number of LINES at the end of the logs.  Defaults to -1, which prints all lines (default -1)
+        -c str         The name of that will be checked. Usefull with pod with multiple containers. Defaults to username
+"
+}
+
+tail="-1"
+username="$1"
+container_name="$1"
+
+if [[ "$#" -eq 0 ]]
+then
+    Usage
+    exit 1 
+fi
+
+if ! [[ "$username" =~ ^[a-z]+$ ]]
+then
+    echo "Bad username value given"
+    exit 1
+fi
+
+shift
+
+optspec="ht:c:"
+
+while getopts "$optspec" optchar; do
+    case "${optchar}" in
+    t)
+        tail="$OPTARG"
+        ;;
+    c)
+        container_name="$OPTARG"
+        ;;
+    h | *)
+        Usage
+        exit 1 
+        ;;
+    esac
+done
+
+if ! [[ "$tail" =~ ^-?[0-9]+$ ]] || [[ "$tail" -lt -1 ]]
+then
+    echo "Bad tail value given"
+    exit 1
+fi
+
+if ! [[ "$container_name" =~ ^[a-z]+$ ]]
+then
+    echo "Bad name value given"
+    exit 1
+fi
+
+su - "$username" -s /bin/ash -c 'podman logs --tail '$tail' $(podman ps -a | grep -e "'$container_name'.*:latest" | cut -d " " -f 1)'

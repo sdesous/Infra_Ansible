@@ -1,0 +1,27 @@
+#!/sbin/openrc-run
+
+depend() {
+    after network-online 
+    use net 
+}
+
+cleanup() {
+    ebegin "Replacing $RC_SVCNAME"
+}
+
+stop() {
+    ebegin "Stopping $RC_SVCNAME"
+    su - $command_user -s /bin/ash -c "podman pod stop -a ; podman pod rm -a ; podman image rm -a" > /dev/null
+    eend $?
+}
+
+
+status() {
+    su - $command_user -s /bin/ash -c 'podman ps -a | grep "$(whoami)"' > /dev/null
+    result=$?
+    if [ $result -eq 0 ]; then
+        ebegin "$command_user is UP"
+    else
+        eend "$command_user is DOWN"
+    fi
+}

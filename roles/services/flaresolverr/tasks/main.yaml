@@ -1,0 +1,43 @@
+- name: "Copy backups"
+  ansible.posix.synchronize:
+    src: "{{ backup_path }}"
+    dest: "{{ path }}"
+    recursive: true
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored directories"
+  command: 'find {{ path }} -type d -exec chown {{ admin }}:{{ admin }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of restored files"
+  command: 'find {{ path }} -type f -exec chown {{ admin }}:{{ admin }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ admin }}"
+    owner: "{{ admin }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Run {{ user }}'s container"
+  containers.podman.podman_container:
+    pod: "{{ admin }}_pod"
+    image: "{{ link }}"
+    name: "{{ user }}"
+    state: started
+    sig_proxy: false
+    detach: yes
+    restart: true
+    env: "{{ env }}"
+    restart_policy: always
+  become: true
+  become_user: "{{ admin }}"
+  become_method: su
+  become_flags: '-s /bin/ash'

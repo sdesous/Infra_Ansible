@@ -1,0 +1,336 @@
+# Global variables
+USER: "root"
+IP_ADDR: "192.168.1.45"
+Volumes_PATH: "/volumes"
+Media_PATH: "/Media"
+Download_PATH: "/Downloads"
+Backups_PATH: "/home/kali/Documents/Backup/volumes"
+User_Backup_PATH: "/Backup_PC"
+Backup_Volume_PATH: "/Backup_volumes"
+SMB_Config_PATH: "/etc/samba/conf"
+DNS: 
+  - "8.8.8.8"
+  - "8.8.4.4"
+restore: false
+
+# Wireguard Variables
+Wireguard_Link: "ghcr.io/wg-easy/wg-easy:latest"
+Wireguard_UID: "2001"
+Wireguard_Username: "wireguard"
+Wireguard_PATH: "{{ Volumes_PATH }}/wireguard_volume"
+Wireguard_Backup_PATH: "{{ Backups_PATH }}/wireguard_volume/"
+Wireguard_PORTS:
+            - "51820:51820/udp"
+            - "51821:51821/tcp"
+Wireguard_VOLUMES:
+            - "{{ Wireguard_PATH }}:/etc/wireguard"
+Wireguard_ENV:
+            WG_HOST: "{{ IP_ADDR }}"
+            PASSWORD: "{{ WG_PASSWORD }}"
+            PUID: "{{ Wireguard_UID }}"
+            PGID: "{{ Wireguard_UID }}"
+
+# Ombi Variables
+Ombi_Link: "lscr.io/linuxserver/ombi:latest"
+Ombi_UID: "2002"
+Ombi_Username: "ombi"
+Ombi_PATH: "{{ Volumes_PATH }}/ombi_volume"
+Ombi_Backup_PATH: "{{ Backups_PATH }}/ombi_volume/"
+Ombi_PORTS:
+              - "3579:3579/tcp"
+Ombi_VOLUMES:
+              - "{{ Ombi_PATH }}/config:/config"
+Ombi_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Ombi_UID }}"
+              PGID: "{{ Ombi_UID }}"
+
+# Jellyfin Variables
+Jellyfin_Link: "docker.io/jellyfin/jellyfin:latest"
+Jellyfin_UID: "{{ Ombi_UID }}"
+Jellyfin_Username: "jellyfin"
+Jellyfin_PATH: "{{ Volumes_PATH }}/jellyfin_volume"
+Jellyfin_Backup_PATH: "{{ Backups_PATH }}/jellyfin_volume/"
+Jellyfin_Media_PATH: "{{ Media_PATH }}"
+Jellyfin_PORTS:
+              - "7359:7359/udp" # DISCOVER
+              - "8096:8096/tcp" # HTTP
+              - "8920:8920/tcp" # HTTPS
+Jellyfin_VOLUMES:
+              - "{{ Jellyfin_PATH }}/config:/config"
+              - "{{ Jellyfin_PATH }}/cache:/cache"
+              - "{{ Jellyfin_Media_PATH }}/Series:/Series"
+              - "{{ Jellyfin_Media_PATH }}/Films:/Films"
+              - "{{ Jellyfin_Media_PATH }}/Anime:/Anime"
+              - "{{ Jellyfin_Media_PATH }}/Music:/Music"
+Jellyfin_ENV:
+              TZ: "Etc/UTC"
+              JELLYFIN_PublishedServerUrl: "{{ IP_ADDR }}"
+              PUID: "{{ Ombi_UID }}"
+              PGID: "{{ Ombi_UID }}"
+
+
+# Flaresolverr Variables
+FLaresolverr_Link: "docker.io/flaresolverr/flaresolverr:latest"
+FLaresolverr_UID: "{{ Ombi_UID }}"
+FLaresolverr_Username: "flaresolverr"
+FLaresolverr_PATH: "{{ Volumes_PATH }}/flaresolverr_volume"
+FLaresolverr_Backup_PATH: "{{ Backups_PATH }}/flaresolverr_volume/"
+FLaresolverr_PORTS: 
+              - "8191:8191/tcp"
+FLaresolverr_ENV:
+              PGID: "{{ FLaresolverr_UID }}"
+              PUID: "{{ FLaresolverr_UID }}"
+              LOG_LEVEL: "info"
+
+# Jackett Variables
+Jackett_Link: "lscr.io/linuxserver/jackett:latest"
+Jackett_UID: "{{ Ombi_UID }}"
+Jackett_Username: "jackett"
+Jackett_PATH: "{{ Volumes_PATH }}/jackett_volume"
+Jackett_Backup_PATH: "{{ Backups_PATH }}/jackett_volume/"
+Jackett_PORTS: 
+              - "9117:9117/tcp"
+Jackett_VOLUMES:
+              - "{{ Jackett_PATH }}/config:/config"
+              - "{{ Jackett_PATH }}/downloads:/downloads"
+Jackett_ENV:
+              PUID: "{{ Jackett_UID }}"
+              PGID: "{{ Jackett_UID }}"
+              TZ: "Etc/UTC"
+              AUTO_UPDATE: "true" 
+
+# Transmission Variables
+Transmission_Link: "ghcr.io/sdesous/transmission:latest"
+Transmission_UID: "{{ Ombi_UID }}"
+Transmission_Username: "transmission"
+Transmission_PATH: "{{ Volumes_PATH }}/transmission_volume"
+Transmission_Backup_PATH: "{{ Backups_PATH }}/transmission_volume/"
+Transmission_PORTS:
+              - "9091:9091/tcp"
+              - "51413:51413/udp"
+              - "51413:51413/tcp"
+Transmission_VOLUMES:
+              - "{{ Transmission_PATH }}/config:/config"
+              - "{{ Download_PATH }}:/downloads"
+              - "{{ Transmission_PATH }}/watch:/watch"
+Transmission_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Transmission_UID }}"
+              PGID: "{{ Transmission_UID }}"
+
+# Sonarr Variables
+Sonarr_Link: "lscr.io/linuxserver/sonarr:latest"
+Sonarr_UID: "{{ Ombi_UID }}"
+Sonarr_Username: "sonarr"
+Sonarr_PATH: "{{ Volumes_PATH }}/sonarr_volume"
+Sonarr_Backup_PATH: "{{ Backups_PATH }}/sonarr_volume/"
+Sonarr_PORTS:
+              - "8989:8989/tcp"
+Sonarr_VOLUMES:
+              - "{{ Sonarr_PATH }}/config:/config"
+              - "{{ Media_PATH }}/Series:/Series" 
+              - "{{ Media_PATH }}/Anime:/Anime" 
+              - "{{ Download_PATH }}:/downloads"
+Sonarr_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Sonarr_UID }}"
+              PGID: "{{ Sonarr_UID }}"
+
+# Radarr Variables
+Radarr_Link: "lscr.io/linuxserver/radarr:latest"
+Radarr_UID: "{{ Ombi_UID }}"
+Radarr_Username: "radarr"
+Radarr_PATH: "{{ Volumes_PATH }}/radarr_volume"
+Radarr_Backup_PATH: "{{ Backups_PATH }}/radarr_volume/"
+Radarr_PORTS:
+              - "7878:7878/tcp"
+              - "9898:9898/tcp"
+Radarr_VOLUMES:
+              - "{{ Radarr_PATH }}/config:/config"
+              - "{{ Download_PATH }}:/downloads"
+              - "{{ Media_PATH }}/Films:/Films"
+Radarr_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Radarr_UID }}"
+              PGID: "{{ Radarr_UID }}"
+
+# Lidarr Variables
+Lidarr_Link: "lscr.io/linuxserver/lidarr:latest"
+Lidarr_UID: "{{ Ombi_UID }}"
+Lidarr_Username: "lidarr"
+Lidarr_PATH: "{{ Volumes_PATH }}/lidarr_volume"
+Lidarr_Backup_PATH: "{{ Backups_PATH }}/lidarr_volume/"
+Lidarr_PORTS:
+              - "8686:8686/tcp"
+Lidarr_VOLUMES:
+              - "{{ Lidarr_PATH }}/config:/config"
+              - "{{ Media_PATH }}/Music:/Music"
+              - "{{ Download_PATH }}:/downloads"
+Lidarr_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Lidarr_UID }}"
+              PGID: "{{ Lidarr_UID }}"
+
+# Homarr Variables
+Homarr_Link: "ghcr.io/ajnart/homarr:latest"
+Homarr_UID: "{{ Ombi_UID }}"
+Homarr_Username: "homarr"
+Homarr_PATH: "{{ Volumes_PATH }}/homarr_volume"
+Homarr_Backup_PATH: "{{ Backups_PATH }}/homarr_volume/"
+Homarr_PORTS:
+              - "7575:7575"
+Homarr_VOLUMES: 
+              - "{{ Homarr_PATH }}/config:/app/data/configs"
+              - "{{ Homarr_PATH }}/icons:/app/public/icons "
+              - "{{ Homarr_PATH }}/data:/data"
+Homarr_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ Homarr_UID }}"
+              PGID: "{{ Homarr_UID }}" 
+
+# Vaultwarden Variables
+Vaultwarden_Link: "docker.io/vaultwarden/server:latest"
+Vaultwarden_UID: "2003"
+Vaultwarden_Username: "vaultwarden"
+Vaultwarden_PATH: "{{ Volumes_PATH }}/vaultwarden_volume"
+Vaultwarden_Backup_PATH: "{{ Backups_PATH }}/vaultwarden_volume/"
+Vaultwarden_PORTS:
+              - "8843:80/tcp"
+Vaultwarden_VOLUMES:
+              - "{{ Vaultwarden_PATH }}/data:/data"
+Vaultwarden_ENV:
+              PUID: "{{ Vaultwarden_UID }}"
+              PGID: "{{ Vaultwarden_UID }}"
+
+# Nextcloud Variables
+Nextcloud_Link: "docker.io/library/nextcloud:latest"
+Nextcloud_Username: "nextcloud"
+Nextcloud_Media_PATH: "/Nextcloud"
+Nextcloud_UID: "2004"
+Nextcloud_PATH: "{{ Volumes_PATH }}/nextcloud_volume"
+Nextcloud_Backup_PATH: "{{ Backups_PATH }}/nextcloud_volume/"
+Nextcloud_PORTS:
+              - "2380:80/tcp"    
+Nextcloud_VOLUMES:
+              - "{{ Nextcloud_PATH }}/nextcloud_data:/var/www/html"
+              - "{{ Nextcloud_Media_PATH }}:/var/www/html/data"
+
+Nextcloud_Postgres_ENV: 
+              POSTGRES_USER: "{{ Nextcloud_Postgres_User }}"
+              POSTGRES_PASSWORD: "{{ Nextcloud_Postgres_Password }}"
+              POSTGRES_DB: "nextcloud"
+
+Nextcloud_Postgres_VOLUMES:
+              - "{{ Nextcloud_PATH }}/postgres_data:/var/lib/postgresql/data"
+
+Nextcloud_Redis_VOLUMES:
+              - "{{ Nextcloud_PATH }}/redis_data:/data"
+
+Nextcloud_ENV:
+              POSTGRES_HOST: "127.0.0.1"
+              POSTGRES_DB: "nextcloud"
+              POSTGRES_USER: "{{ Nextcloud_Postgres_User }}"
+              POSTGRES_PASSWORD: "{{ Nextcloud_Postgres_Password }}"
+              NEXTCLOUD_TRUSTED_DOMAINS: '{{ IP_ADDR }}'
+              REDIS_HOST: "127.0.0.1"
+
+# HAproxy Variables
+HAproxy_Link: "docker.io/haproxytech/haproxy-alpine:latest"
+HAproxy_UID: "2005"
+HAproxy_Username: "haproxy"
+HAproxy_PATH: "{{ Volumes_PATH }}/haproxy_volume"
+HAproxy_Backup_PATH: "{{ Backups_PATH }}/haproxy_volume/"
+HA_certificates_PATH: "{{ Volumes_PATH }}/certificates"
+HA_certificates_Backup_PATH: "{{ Backups_PATH }}/certificates"
+HAproxy_PORTS:
+              - "80:80"
+              - "443:443"
+HAproxy_VOLUMES: 
+              - "{{ HAproxy_PATH }}:/usr/local/etc/haproxy"
+              - "{{ HA_certificates_PATH }}:/certificates"
+HAproxy_ENV:
+              TZ: "Etc/UTC"
+              PUID: "{{ HAproxy_UID }}"
+              PGID: "{{ HAproxy_UID }}" 
+
+# Transfer.sh Variables
+Transfer_Link: "ghcr.io/sdesous/transfer.sh:latest"
+Transfer_UID: "2006"
+Transfer_Username: "transfer"
+Transfer_PATH: "{{ Volumes_PATH }}/transfer_volume"
+Transfer_Backup_PATH: "{{ Backups_PATH }}/transfer_volume/"
+Transfer_TMP_PATH: "/Transfers"
+Transfer_PORTS: "2323:8080"
+Transfer_VOLUMES: 
+              - "{{ Transfer_TMP_PATH }}:/tmp/"
+# Transfer_HTTP_AUTH_USER: "admin" 
+# Transfer_HTTP_AUTH_PASS: "password123"
+Transfer_PURGE_INTERVAL: "2"
+Transfer_FORCE_HTTPS: "false"
+Transfer_MAX_UPLOAD_SIZE : "104857600"
+Transfer_ENV:
+              PGID: "{{ Transfer_UID }}"
+              PUID: "{{ Transfer_UID }}"
+              FORCE_HTTPS: "{{ Transfer_FORCE_HTTPS }}"
+              PURGE_INTERVAL: "{{ Transfer_PURGE_INTERVAL }}"
+# -e HTTP_AUTH_USER='{{ Transfer_HTTP_AUTH_USER }}' \
+# -e HTTP_AUTH_PASS='{{ Transfer_HTTP_AUTH_PASS }}' \
+
+# Pihole Variables
+# Pihole_Link: "ghcr.io/pihole/pihole:latest"
+# Pihole_UID: "2007"
+# Pihole_Username: "pihole"
+# Pihole_PATH: "{{ Volumes_PATH }}/pihole_volume"
+# Pihole_Backup_PATH: "{{ Backups_PATH }}/pihole_volume/"
+# Pihole_PORTS: 
+#             - "53:53/tcp"
+#             - "53:53/udp"
+#             - "67:67/udp"
+#             - "8053:80/tcp"
+# Pihole_VOLUMES: 
+#             - "{{ Pihole_PATH }}/etc-pihole:/etc/pihole"
+#             - "{{ Pihole_PATH }}/etc-dnsmasq.d:/etc/dnsmasq.d"
+#             - "/etc/subuid:/etc/subuid"
+# Pihole_ENV: 
+#             TZ: "Etc/UTC"
+#             WEBPASSWORD: "password123"
+#             PUID: "{{ Pihole_UID }}"
+#             PGID: "{{ Pihole_UID }}" 
+
+# Mealie Variables
+Mealie_Link: "ghcr.io/mealie-recipes/mealie:latest"
+Mealie_UID: "2007"
+Mealie_Username: "mealie"
+Mealie_PATH: "{{ Volumes_PATH }}/mealie_volume"
+Mealie_PORTS:
+            - "9000:9000/tcp"
+
+Mealie_Postgres_VOLUMES:
+            - "{{ Mealie_PATH }}/postgres:/var/lib/postgresql/data"
+
+Mealie_Postgres_ENV:
+            POSTGRES_USER: "{{ Mealie_DB_User }}"
+            POSTGRES_PASSWORD: "{{ Mealie_DB_Password }}"
+            POSTGRES_DB: "mealie"
+
+Mealie_VOLUMES: 
+            - "{{ Mealie_PATH }}/mealie/data:/var/lib/mealie"
+Mealie_ENV:
+            ALLOW_SIGNUP: "false"
+            DB_ENGINE: "postgres"
+            POSTGRES_USER: "{{ Mealie_DB_User }}"
+            POSTGRES_PASSWORD: "{{ Mealie_DB_Password }}"
+            POSTGRES_SERVER: "127.0.0.1"
+            POSTGRES_PORT: 5432
+            POSTGRES_DB: "mealie"
+            WEB_GUNICORN: "false"
+            WORKERS_PER_CORE: 0.5
+            MAX_WORKERS: 1
+            WEB_CONCURRENCY: 1
+
+Mealie_Backup_PATH: "{{ Backups_PATH }}/mealie_volume/"
+
+Postgres_Link: "docker.io/library/postgres:latest"
+Redis_Link: "docker.io/library/redis:latest"
+transmission_torrent: "/config/torrent"

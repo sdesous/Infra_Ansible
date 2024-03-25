@@ -1,0 +1,159 @@
+- name: "Create {{ user }} user"
+  ansible.builtin.user:
+    name: "{{ user }}"
+    comment: "{{ user }}"
+    uid: "{{ uid }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    groups: "podman"
+    append: yes
+
+- name: "Change {{ user }}'s home directory permissions"
+  file:
+    path: "/home/{{ user }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0770'
+    state: directory
+
+- name: 'Copy backups'
+  ansible.posix.synchronize:
+    src: "{{ backup_path }}"
+    dest: "{{ path }}"
+    recursive: true
+  when: restore is truthy
+  ignore_errors: true
+
+- name: 'Change permissions of restored directories'
+  command: 'find {{ path }} -type d -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: 'Change permissions of restored files'
+  command: 'find {{ path }} -type f -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: 'Create certificates directory'
+  file:
+    path: "{{ certificate_path }}"
+    owner: "{{ user }}"
+    group: "{{ user }}"
+    mode: '0770'
+    state: directory
+
+- name: 'Copy certificates'
+  ansible.posix.synchronize:
+    src: "{{ certificate_backup_path }}/"
+    dest: "{{ certificate_path }}"
+    recursive: true
+  ignore_errors: true
+
+- name: "Change permissions of restored certificates's directories"
+  command: 'find {{ certificate_path }} -type d -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0770 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Change permissions of certificates"
+  command: 'find {{ certificate_path }} -type f -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0660 {} \;'
+  when: restore is truthy
+  ignore_errors: true
+
+- name: "Create {{ user }} volume directory"
+  file:
+    path: "{{ item | split(':') | first }}"
+    state: directory
+    group: "{{ user }}"
+    owner: "{{ user }}"
+    recurse: yes
+    mode: '0770'
+  with_items: "{{ volumes }}"
+
+- name: "Add {{ user }} to subuid and subgid"
+  import_tasks: subuid_or_subgid.yaml
+  vars:
+    username: "{{ user }}"
+
+- name: "Run podman system migrate"
+  command: "podman system migrate"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Create {{ user }}'s pod"
+  containers.podman.podman_pod:
+    name: "{{ user }}_pod"
+    state: started
+    ports: "{{ ports }}"
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Run {{ user }}'s container"
+  containers.podman.podman_container:
+    pod: "{{ user }}_pod"
+    name: "{{ user }}"
+    image: "{{ link }}"
+    state: started
+    detach: yes
+    restart: true
+    volume: "{{ volumes }}"
+    restart_policy: always
+    sysctl:
+      { net.ipv4.ip_unprivileged_port_start: 0 }
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Create {{ user }} yaml file"
+  ansible.builtin.shell : "podman generate kube {{ user }}_pod > {{ path }}/{{ user }}_kubefile.yaml" 
+  become: true
+  become_user: "{{ user }}"
+  become_method: su
+  become_flags: '-s /bin/ash'
+
+- name: "Rename the pod correctly in the yaml file"
+  ansible.builtin.replace:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    regexp: '{{ user }}pod'
+    replace: "{{ user }}_pod"
+
+- name: "Change {{ user }}'s yaml file permissions"
+  file:
+    path: "{{ path }}/{{ user }}_kubefile.yaml"
+    owner: root
+    group: "{{ user }}"
+    mode: '0664'
+    state: file
+
+- name: "Create pod file for init.d"
+  ansible.builtin.copy:
+    dest: "/root/pods/{{ user }}_service"
+    src: "{{ playbook_dir }}/resources/pod_template"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: "Update {{ user }}_service file"
+  ansible.builtin.replace:
+    path: "/root/pods/{{ user }}_service"
+    regexp: "{{ item.0 }}"
+    replace: "{{ item.1 }}"
+  with_together:
+    - ['\$user','\$volume_path','\$pod_name']
+    - ["{{ user }}","{{ path }}","{{ user }}_pod"]
+
+- name: "Create {{ user }} symlink"
+  file:
+    src: "/root/pods/{{ user }}_service"
+    dest: "/etc/init.d/{{ user }}"
+    state: link
+
+- name: "Add {{ user }} to init boot"
+  command: "{{ item }}"
+  with_items:
+    - "rc-update add {{ user }} boot"

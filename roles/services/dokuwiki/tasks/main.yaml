@@ -1,0 +1,56 @@
+# - name: Copy backups
+#   ansible.posix.synchronize:
+#     src: "{{ Dokuwiki_Backup_PATH }}/"
+#     dest: "{{ Dokuwiki_PATH }}"
+#     recursive: true
+#   ignore_errors: true
+
+- name: Create Dokuwiki directories
+  file:
+    path: "{{ Dokuwiki_PATH }}/config"
+    state: directory
+    group: dokuwiki
+    owner: dokuwiki
+    recurse: yes
+
+- name: Change permissions
+  file:
+    path: "{{ Dokuwiki_PATH }}"
+    state: directory
+    owner: dokuwiki
+    group: dokuwiki
+    mode: '0700'
+    recurse: yes
+
+- name: Create Dokuwiki run script
+  copy:
+    dest: "{{ Dokuwiki_PATH }}/dokuwiki.sh"
+    force: true
+    group: dokuwiki
+    owner: dokuwiki
+    mode: '0500'
+    content:
+      "#!/bin/ash \n
+
+      podman run -d \\\n
+        --name=dokuwiki \\\n
+        -e TZ={{ Dokuwiki_ENV.TZ }} \\\n
+        -e PUID={{ Dokuwiki_ENV.PUID }} \\\n
+        -e PGID={{ Dokuwiki_ENV.PGID }} \\\n
+        -p {{ Dokuwiki_PORTS[0] }} \\\n
+        -p {{ Dokuwiki_PORTS[1] }} \\\n
+        -v {{ Dokuwiki_VOLUMES[0] }} \\\n
+        --restart=always \\\n
+        lscr.io/linuxserver/dokuwiki:latest \n"
+
+- name: Run Dokuwiki's container
+  containers.podman.podman_container:
+    image: "{{ link }}"
+    name: dokuwiki
+    state: started
+    detach: yes
+    restart: true
+    ports: "{{ Dokuwiki_PORTS }}"
+    volume: "{{ Dokuwiki_VOLUMES }}"
+    env: "{{ Dokuwiki_ENV }}" 
+    restart_policy: always

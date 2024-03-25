@@ -1,0 +1,157 @@
+---
+- name: Create samba users
+  ansible.builtin.user:
+    name: "{{ item.key | lower }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: Install samba
+  command: apk add samba
+
+- name: Configure samba as a service on boot
+  command: "{{ item }}"
+  with_items:
+    - "rc-update add samba"  
+    - "rc-service samba start"
+
+- name: Create smb_users group
+  ansible.builtin.group:
+    name: smb_users
+    state: present
+
+- name: Create smb_admins group
+  ansible.builtin.group:
+    name: smb_admins
+    state: present
+
+- name: Create smb_svc user
+  ansible.builtin.user:
+    name: "smb_svc"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    append: true
+    groups: 
+      - "smb_admins"
+      - "smb_users"
+
+- name: Set Samba passwords for smb_svc
+  shell: "echo -ne '{{ Smb_svc_Password }}\n{{ Smb_svc_Password }}\n' | smbpasswd -a smb_svc"
+  no_log: True
+
+- name: Set Samba passwords for each user
+  shell: "echo -ne '{{ item.value.Password }}\n{{ item.value.Password }}\n' | smbpasswd -a {{ item.key | lower }}"
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: Add users to smb_users group
+  ansible.builtin.user:
+    name: "{{ item.key | lower }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    append: true
+    groups:
+      - "smb_users"
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: Add users to smb_admins group
+  ansible.builtin.user:
+    name: "{{ item | lower }}"
+    create_home: false
+    password: '!'
+    shell: "/sbin/nologin"
+    append: true
+    groups:
+      - "smb_admins"
+  loop:
+    "{{ SMB_Admins }}"
+  no_log: True
+
+- name: Create user backup directory
+  file:
+    path: "{{ User_Backup_PATH }}"
+    state: directory
+    group: "smb_users"
+    owner: "root"
+    mode: '0770'
+    recurse: yes
+
+- name: Create users's backup shares
+  file:
+    path: "{{ User_Backup_PATH }}/{{ item.key }}_Backup"
+    state: directory
+    group: "{{ item.key | lower }}"
+    owner: "{{ item.key | lower }}"
+    mode: '0770'
+    recurse: yes
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: Create volume's backup directory
+  file:
+    path: "{{ Backup_Volume_PATH }}"
+    state: directory
+    group: "smb_admins"
+    owner: "root"
+    mode: '0770'
+    recurse: yes
+
+- name: Create samba configuration directory
+  file:
+    path: "{{ SMB_Config_PATH }}"
+    state: directory
+    group: "root"
+    owner: "root"
+    mode: '0770'
+    recurse: yes
+
+- name: Create samba configuration files for users's backup
+  copy:
+    dest: "{{ SMB_Config_PATH }}/{{ item.key | lower }}_backup.conf"
+    force: true
+    group: root
+    owner: root
+    mode: '0644'
+    content:
+      "[{{ item.key | lower }}_share]\n
+         comment = {{ item.key }}'s share\n
+         path = {{ User_Backup_PATH }}/{{ item.key }}_Backup\n
+         valid users = {{ item.key | lower }}\n
+         writable = yes\n"
+  with_dict:
+    "{{ SMB_Users }}"
+  no_log: True
+
+- name: Create samba configuration files for volumes
+  copy:
+    dest: "{{ SMB_Config_PATH }}/volumes_backup.conf"
+    force: true
+    group: root
+    owner: root
+    mode: '0644'
+    content:
+      "[volumes_backup]\n
+         comment = Volume's Backup share\n
+         path = {{ Backup_Volume_PATH }}\n
+         valid users = @smb_admins\n
+         writable = yes\n"
+
+- name: Copy smb.conf from resources to remote target
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/resources/smb.conf"
+    dest: "/etc/samba/smb.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  
+- name: Include samba configuration files
+  ansible.builtin.raw: "ls {{ SMB_Config_PATH }}/* | sed -e 's+^+include = +' >> /etc/samba/smb.conf"

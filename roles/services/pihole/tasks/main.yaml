@@ -1,0 +1,71 @@
+# - name: Copy backups
+#   ansible.posix.synchronize:
+#     src: "{{ Pihole_Backup_PATH }}/"
+#     dest: "{{ Pihole_PATH }}"
+#     recursive: true
+#   ignore_errors: true
+
+- name: Create Pihole directories
+  file:
+    path: "{{ Pihole_PATH }}/etc-pihole"
+    state: directory
+    group: pihole
+    owner: pihole
+    recurse: yes
+
+- name: Create Pihole directories
+  file:
+    path: "{{ Pihole_PATH }}/etc-dnsmasq.d"
+    state: directory
+    group: pihole
+    owner: pihole
+    recurse: yes
+
+- name: Change permissions
+  file:
+    path: "{{ Pihole_PATH }}"
+    state: directory
+    owner: pihole
+    group: pihole
+    mode: '0700'
+    recurse: yes
+
+- name: Create Pihole run script
+  copy:
+    dest: "{{ Pihole_PATH }}/pihole.sh"
+    force: true
+    group: pihole
+    owner: pihole
+    mode: '0500'
+    content:
+      "#!/bin/ash \n
+
+      podman run -d \\\n
+        --name=pihole \\\n
+        -e TZ={{ Pihole_ENV.TZ }} \\\n
+        -e PUID={{ Pihole_ENV.PUID }} \\\n
+        -e PGID={{ Pihole_ENV.PGID }} \\\n
+        -e WEBPASSWORD='{{ Pihole_ENV.WEBPASSWORD }}' \\\n
+        -p {{ Pihole_PORTS[0] }} \\\n
+        -p {{ Pihole_PORTS[1] }} \\\n
+        -p {{ Pihole_PORTS[2] }} \\\n
+        -p {{ Pihole_PORTS[3] }} \\\n
+        -v {{ Pihole_VOLUMES[0] }} \\\n
+        -v {{ Pihole_VOLUMES[1] }} \\\n
+        --cap-add=NET_ADMIN \\\n
+        --restart=always \\\n
+        pihole/pihole:latest \n"
+
+- name: Run Pihole's container
+  containers.podman.podman_container:
+    image: "{{ link }}"
+    name: pihole
+    state: started
+    detach: yes
+    restart: true
+    ports: "{{ Pihole_PORTS }}"
+    volume: "{{ Pihole_VOLUMES }}"
+    env: "{{ Pihole_ENV }}" 
+    capabilities:
+      - NET_ADMIN
+    restart_policy: always
