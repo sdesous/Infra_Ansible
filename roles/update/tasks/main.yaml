@@ -152,10 +152,18 @@
 - name: Run sysctl to use ports from 80 with rootless users
   command: sysctl net.ipv4.ip_unprivileged_port_start=80
 
-# - name: Let's encrypt certificate renew cron job
-#   ansible.builtin.cron:
-#     name: "Let's encrypt cron job"
-#     minute: "0"
-#     hour: "0"
-#     day: "1"
-#     job: "./volumes/certificates/letsencrypt_renew.sh"
+- name: Copy backup.sh
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/resources/backup.sh"
+    dest: "/root/backup.sh"
+    owner: root
+    group: root
+    mode: '0770'
+
+- name: Create backup cron job
+  ansible.builtin.cron:
+    name: "Volume's backup cron job"
+    minute: "0"
+    hour: "8"
+    weekday: "1,3,5"
+    job: "./root/backup.sh"

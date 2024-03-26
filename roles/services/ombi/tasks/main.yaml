@@ -194,7 +194,7 @@
 - name: "Add the users to {{ user }} group"
   ansible.builtin.user:
     name: "{{ item.key | lower }}"
-    groups: "smb_admins"
+    groups: "ombi"
     append: yes
   with_dict:
     "{{ SMB_Users }}"
