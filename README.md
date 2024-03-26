@@ -11,7 +11,7 @@ $ ansible-galaxy collection install containers.podman
 - Target hosts running a **Alpine Linux** with python3 installed.
 - SSH access to the target machine as root
 ```
-$ ssh-copy-id root@Alpine_IP_addr
+$ ssh-copy-id root@<Alpine_IP_addr>
 ```
 
 ## Containers
