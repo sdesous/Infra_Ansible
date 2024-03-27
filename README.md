@@ -4,11 +4,15 @@ This Ansible project automates the deployment of a complete rootless Podman cont
 ## Prerequisites
 
 - Ansible installed on the control node.
-- Ansible podman collection installed
+- Ansible podman collection installed on control node.
 ```
 $ ansible-galaxy collection install containers.podman
 ```
 - Target hosts running a **Alpine Linux** with python3 installed.
+- SSH access to the target machine as root
+```
+$ ssh-copy-id root@<Alpine_IP>
+```
 
 ## Containers
 
