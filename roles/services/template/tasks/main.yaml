@@ -17,7 +17,7 @@
     mode: '0770'
     state: directory
 
-- name: "Copy backups"
+- name: 'Copy backups'
   ansible.posix.synchronize:
     src: "{{ backup_path }}"
     dest: "{{ path }}"
@@ -25,12 +25,12 @@
   when: restore is truthy
   ignore_errors: true
 
-- name: "Change permissions of restored directories"
+- name: 'Change permissions of restored directories'
   command: 'find {{ path }} -type d -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0770 {} \;'
   when: restore is truthy
   ignore_errors: true
 
-- name: "Change permissions of restored files"
+- name: 'Change permissions of restored files'
   command: 'find {{ path }} -type f -exec chown {{ user }}:{{ user }} {} \; -exec chmod 0660 {} \;'
   when: restore is truthy
   ignore_errors: true
@@ -45,17 +45,7 @@
     mode: '0770'
   with_items: "{{ volumes }}"
 
-- name: "Create postgres volume directory"
-  file:
-    path: "{{ item | split(':') | first }}"
-    state: directory
-    group: "{{ user }}"
-    owner: "{{ user }}"
-    recurse: yes
-    mode: '0770'
-  with_items: "{{ volume_postgres }}"
-
-- name: "Add user to subuid and subgid"
+- name: "Add {{ user }} to subuid and subgid"
   import_tasks: subuid_or_subgid.yaml
   vars:
     username: "{{ user }}"
@@ -77,22 +67,6 @@
   become_method: su
   become_flags: '-s /bin/ash'
 
-- name: "Run a Postgres container"
-  containers.podman.podman_container:
-    image: "{{ Postgres_Link }}"
-    pod: "{{ user }}_pod"
-    name: postgres
-    state: started
-    detach: yes
-    restart: true
-    volume: "{{ volume_postgres }}"
-    env: "{{ env_postgres }}"
-    restart_policy: always
-  become: true
-  become_user: "{{ user }}"
-  become_method: su
-  become_flags: '-s /bin/ash'
-
 - name: "Run {{ user }}'s container"
   containers.podman.podman_container:
     pod: "{{ user }}_pod"
@@ -101,10 +75,8 @@
     state: started
     detach: yes
     restart: true
-    volume: "{{ volumes + ['/etc/localtime:/etc/localtime:ro'] }}"
-    env: "{{ env }}"
+    volume: "{{ volumes }}"
     restart_policy: always
-    requires: postgres
   become: true
   become_user: "{{ user }}"
   become_method: su
