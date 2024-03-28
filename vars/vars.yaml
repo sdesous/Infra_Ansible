@@ -25,7 +25,7 @@ Wireguard_PORTS:
 Wireguard_VOLUMES:
             - "{{ Wireguard_PATH }}:/etc/wireguard"
 Wireguard_ENV:
-            WG_HOST: "example.com"
+            WG_HOST: "example.com" ############### Your domain name or Public address
             PASSWORD: "{{ WG_PASSWORD }}"
             PUID: "{{ Wireguard_UID }}"
             PGID: "{{ Wireguard_UID }}"
