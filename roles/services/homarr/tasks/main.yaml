@@ -35,7 +35,7 @@
     detach: yes
     restart: true
     recreate: true
-    volume: "{{ volumes + ['/var/run/podman/podman.sock:/var/run/docker.sock'] }}"
+    volume: "{{ volumes }}"
     env: "{{ env }}"
     restart_policy: always
   become: true
