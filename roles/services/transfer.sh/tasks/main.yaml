@@ -117,6 +117,7 @@
     state: started
     detach: yes
     restart: true
+    recreate: true
     volume: "{{ volumes }}"
     env: "{{ env }}"
     command: "--provider local --basedir /tmp/"

@@ -18,7 +18,7 @@ $ ssh-copy-id root@<Alpine_IP>
 
 | Container                                                                                           | Description                                                 | Pod             | User        |
 |-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------|-----------------|-------------|
-| [WG-easy](https://github.com/wg-easy/wg-easy)                                                       | VPN                                                         | wireguard_pod   | wireguard   |
+| [WG-easy](https://github.com/wg-easy/wg-easy)                                                       | VPN                                                         | wireguard_pod   | root   |
 | [Ombi](https://docs.linuxserver.io/images/docker-ombi/)                                             | Centralize Radarr, Sonarr and Lidarr in one interface       | ombi_pod        | ombi        |
 | [Jellyfin](https://jellyfin.org/docs/general/installation/container/)                               | Media player solution                                       | ombi_pod        | ombi        |
 | [Flaresolverr](https://github.com/FlareSolverr/FlareSolverr)                                        | Proxy server to bypass Cloudflare and DDoS-GUARD protection | ombi_pod        | ombi        |

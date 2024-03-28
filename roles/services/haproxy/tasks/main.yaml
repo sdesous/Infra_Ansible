@@ -100,6 +100,7 @@
     state: started
     detach: yes
     restart: true
+    recreate: true
     volume: "{{ volumes }}"
     restart_policy: always
     sysctl:

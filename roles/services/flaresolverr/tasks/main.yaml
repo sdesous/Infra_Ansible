@@ -35,6 +35,7 @@
     sig_proxy: false
     detach: yes
     restart: true
+    recreate: true
     env: "{{ env }}"
     restart_policy: always
   become: true

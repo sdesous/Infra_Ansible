@@ -75,7 +75,9 @@
     state: started
     detach: yes
     restart: true
+    recreate: true
     volume: "{{ volumes }}"
+    env: "{{ env }}"
     restart_policy: always
   become: true
   become_user: "{{ user }}"

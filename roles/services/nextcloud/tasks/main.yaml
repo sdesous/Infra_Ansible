@@ -140,7 +140,7 @@
     state: started
     detach: yes
     restart: true
-    user: "root"
+    recreate: true
     volume: "{{ Nextcloud_VOLUMES }}"
     env: "{{ Nextcloud_ENV }}"
     restart_policy: always

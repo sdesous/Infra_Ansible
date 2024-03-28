@@ -7,6 +7,18 @@
     - { role: 'update', tags: 'update'}                         # Don't move this line (first)  
     - { role: 'samba', tags: 'samba'}                           # Don't move this line (second)
 
+    - role: 'services/wireguard'
+      tags: 'wireguard'                     
+      vars:
+        user: "{{ Wireguard_Username }}"
+        ports: "{{ Wireguard_PORTS }}"
+        uid: "{{ Wireguard_UID }}"
+        path: "{{ Wireguard_PATH }}"
+        backup_path: "{{ Wireguard_Backup_PATH }}"
+        volumes: "{{ Wireguard_VOLUMES }}"
+        env: "{{ Wireguard_ENV }}"
+        link: "{{ Wireguard_Link }}"
+
     - role: 'services/transfer.sh'
       tags: 'transfer.sh'                     
       vars:
@@ -32,18 +44,6 @@
         certificate_path: "{{ HA_certificates_PATH }}"
         certificate_backup_path: "{{ HA_certificates_Backup_PATH }}"
         link: "{{ HAproxy_Link }}"
-
-    - role: 'services/wireguard'
-      tags: 'wireguard'                     
-      vars:
-        user: "{{ Wireguard_Username }}"
-        ports: "{{ Wireguard_PORTS }}"
-        uid: "{{ Wireguard_UID }}"
-        path: "{{ Wireguard_PATH }}"
-        backup_path: "{{ Wireguard_Backup_PATH }}"
-        volumes: "{{ Wireguard_VOLUMES }}"
-        env: "{{ Wireguard_ENV }}"
-        link: "{{ Wireguard_Link }}"
 
     - role: 'services/vaultwarden'
       tags: 'vaultwarden'                     
