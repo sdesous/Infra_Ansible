@@ -4,7 +4,7 @@ IP_ADDR: "192.168.1.45"
 Volumes_PATH: "/volumes"
 Media_PATH: "/Media"
 Download_PATH: "/Downloads"
-Backups_PATH: "/home/kali/Documents/Backup/volumes"
+Backups_PATH: "<Change_me>"
 User_Backup_PATH: "/Backup_PC"
 Backup_Volume_PATH: "/Backup_volumes"
 SMB_Config_PATH: "/etc/samba/conf"
@@ -25,7 +25,7 @@ Wireguard_PORTS:
 Wireguard_VOLUMES:
             - "{{ Wireguard_PATH }}:/etc/wireguard"
 Wireguard_ENV:
-            WG_HOST: "{{ IP_ADDR }}"
+            WG_HOST: "example.com"
             PASSWORD: "{{ WG_PASSWORD }}"
             PUID: "{{ Wireguard_UID }}"
             PGID: "{{ Wireguard_UID }}"
