@@ -230,9 +230,9 @@ Here is an example of a the default share's file structure :
 
 | Action  | Description                                                                                      | Command                        |
 |---------|--------------------------------------------------------------------------------------------------|--------------------------------|
-| Start   | 1 - Pull all required image 2 - Recreate the pod 3 - Run all required containers inside the pod  | `rc-service svc_name start`   |
-| Stop    | 1 - Stop all containers 2 - Delete the pod with it's containers 3 - Delete all images            | `rc-service svc_name stop`    |
-| Restart | 1 - Stop 2 - Start (Can act like an update action)                                               | `rc-service svc_name restart` |
+| Start   | 1 - Pull all required image<br>2 - Recreate the pod<br>3 - Run all required containers inside the pod  | `rc-service svc_name start`   |
+| Stop    | 1 - Stop all containers<br>2 - Delete the pod with it's containers<br>3 - Delete all images            | `rc-service svc_name stop`    |
+| Restart | 1 - Stop<br>2 - Start (Can act like an update action)                                               | `rc-service svc_name restart` |
 
 
 ## Interact with containers as root
