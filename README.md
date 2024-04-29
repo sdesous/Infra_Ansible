@@ -1,3 +1,10 @@
+## TODO
+
+- Append a "haproxy.cfg" template file
+- Refactor "playbook.yaml"
+- Disable IPv6
+- Script to create init files 
+
 ## Overview
 
 This Ansible project automates the deployment of a complete rootless Podman container infrastructure. It allows users to easily set up and manage containerized environments without requiring root privileges, ensuring security and flexibility.
