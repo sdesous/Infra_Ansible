@@ -4,7 +4,7 @@ IP_ADDR: "192.168.1.45"
 Volumes_PATH: "/volumes"
 Media_PATH: "/Media"
 Download_PATH: "/Downloads"
-Backups_PATH: "<Change_me>"
+Backups_PATH: "/home/kali/Documents/Backup/volumes"
 User_Backup_PATH: "/Backup_PC"
 Backup_Volume_PATH: "/Backup_volumes"
 SMB_Config_PATH: "/etc/samba/conf"
@@ -17,6 +17,9 @@ restore: false
 Wireguard_Link: "ghcr.io/wg-easy/wg-easy:latest"
 Wireguard_UID: "2001"
 Wireguard_Username: "wireguard"
+Wireguard_ALLOWED_IPS: "192.168.1.0/24, 0.0.0.0/0, ::/0"
+Wireguard_MTU: "1500"
+Wireguard_DEFAULT_DNS: "8.8.8.8, 8.8.4.4"
 Wireguard_PATH: "{{ Volumes_PATH }}/wireguard_volume"
 Wireguard_Backup_PATH: "{{ Backups_PATH }}/wireguard_volume/"
 Wireguard_PORTS:
@@ -25,10 +28,14 @@ Wireguard_PORTS:
 Wireguard_VOLUMES:
             - "{{ Wireguard_PATH }}:/etc/wireguard"
 Wireguard_ENV:
-            WG_HOST: "example.com" ############### Your domain name or Public address
-            PASSWORD: "{{ WG_PASSWORD }}"
+            WG_HOST: "{{ IP_ADDR }}"
+            PASSWORD_HASH: "{{ WG_PASSWORD_HASH }}"
             PUID: "{{ Wireguard_UID }}"
             PGID: "{{ Wireguard_UID }}"
+            WG_ALLOWED_IPS: "{{ Wireguard_ALLOWED_IPS }}"
+            WG_MTU: "{{ Wireguard_MTU }}"
+            WG_DEFAULT_DNS: "{{ Wireguard_DEFAULT_DNS }}"
+
 
 # Ombi Variables
 Ombi_Link: "lscr.io/linuxserver/ombi:latest"
@@ -74,8 +81,6 @@ Jellyfin_ENV:
 FLaresolverr_Link: "docker.io/flaresolverr/flaresolverr:latest"
 FLaresolverr_UID: "{{ Ombi_UID }}"
 FLaresolverr_Username: "flaresolverr"
-FLaresolverr_PATH: "{{ Volumes_PATH }}/flaresolverr_volume"
-FLaresolverr_Backup_PATH: "{{ Backups_PATH }}/flaresolverr_volume/"
 FLaresolverr_PORTS: 
               - "8191:8191/tcp"
 FLaresolverr_ENV:
