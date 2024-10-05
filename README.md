@@ -154,7 +154,7 @@ SMB_Users:
 SMB_Admins:
   - "User_1"
   - "User_2"
-WG_PASSWORD: "$uperSecur3P@$$w0rD"
+WG_PASSWORD_HASH: '$2a$12$FJsZKTiI48zFPLUfVyktCOgCJXum3KgC9LCDE/9nd3z7U9RaghLT.' # This is literally the hash of '$uperSecur3P@$$w0rD'
 Nextcloud_Postgres_User: "username"
 Nextcloud_Postgres_Password: '$uperSecur3P@$$w0rD'
 Smb_svc_Password: '$uperSecur3P@$$w0rD`'
